@@ -1,0 +1,88 @@
+<input type="file" id="fileUpload" />
+<video controls>
+</video>
+<video controls id="video1" muted>
+</video>
+
+<script>
+document.querySelector('#fileUpload').addEventListener('change', event => {
+  handleImageUpload(event)
+})
+
+const handleImageUpload = event => {
+  const files = event.target.files
+  const formData = new FormData()
+  formData.append('prof', files[0])
+  console.log(files[0])
+
+  fetch('http://localhost:3000/imageUpload', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log(data)
+  })
+  .catch(error => {
+    console.error(error)
+  })
+}
+function uuidv4() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  );
+}
+
+</script>
+
+<script>
+  var video = document.querySelector('video');
+  const canvas = document.createElement("canvas");
+
+
+  navigator.mediaDevices.getUserMedia({video:true, audio:true})
+    .then(function onSuccess(stream) {
+
+      var video1 = document.getElementById('video1');
+      video1.srcObject = stream;
+      video1.onloadedmetadata = function(e) {
+      video1.play();
+      }
+
+      var recorder = new MediaRecorder(stream);
+
+      var data = [];
+      recorder.ondataavailable = function(e) {
+        data.push(e.data);
+      };
+      recorder.start();
+      recorder.onerror = function(e) {
+        throw e.error || new Error(e.name); // e.name is FF non-spec
+      }
+      recorder.onstop = function(e) {
+
+        let uuid = uuidv4()
+        video.src = window.URL.createObjectURL(new Blob(data, {type: 'video/webm', name: 'prof'}));
+        let blob = new Blob(data, {type: 'video/webm'})
+        let file = new File([blob], `${uuid}.webm`, {
+        type: "video/webm",
+        });
+        console.log(file)
+        const formData = new FormData()
+        formData.append('prof', file)
+        fetch('http://localhost:5000/imageUpload', {
+          method: 'POST',
+          body: formData
+        })
+
+
+      }
+      setTimeout(function() {
+        recorder.stop()
+        stream.getTracks().forEach(function (track) { track.stop(); });
+      }, 10000);
+    })
+    .catch(function onError(error) {
+      console.log(error.message);
+    });
+</script>
